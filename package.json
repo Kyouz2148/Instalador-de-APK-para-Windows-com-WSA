@@ -1,24 +1,25 @@
 {
   "name": "wsa-apk-installer",
-  "version": "1.0.0",
-  "description": "Aplicativo desktop para instalar APKs no Windows Subsystem for Android",
+  "version": "2.0.0",
+  "description": "Instalador de APKs para Windows Subsystem for Android - Aplicativo Desktop",
   "main": "electron-main.js",
-  "homepage": "./",
+  "author": "Alan Godois",
+  "license": "MIT",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
-    "electron": "electron .",
-    "electron-dev": "concurrently \"npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "start": "electron .",
+    "dev": "electron . --dev",
     "build": "electron-builder",
+    "build-win": "electron-builder --win",
     "dist": "npm run build",
     "pack": "electron-builder --dir",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "postinstall": "electron-builder install-app-deps"
   },
   "build": {
     "appId": "com.alangodois.wsa-apk-installer",
     "productName": "WSA APK Installer",
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "assets"
     },
     "files": [
       "**/*",
@@ -27,18 +28,29 @@
       "node_modules/express/**/*",
       "node_modules/multer/**/*",
       "node_modules/cors/**/*",
-      "node_modules/fs-extra/**/*"
+      "node_modules/fs-extra/**/*",
+      "node_modules/path/**/*"
     ],
     "win": {
-      "target": "nsis",
+      "target": {
+        "target": "nsis",
+        "arch": ["x64"]
+      },
       "icon": "assets/icon.ico",
-      "requestedExecutionLevel": "requireAdministrator"
+      "requestedExecutionLevel": "requireAdministrator",
+      "artifactName": "${productName}-${version}-Setup.${ext}"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "shortcutName": "WSA APK Installer"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Kyouz2148",
+      "repo": "Instalador-de-APK-para-Windows-com-WSA"
     }
   },
   "keywords": [
@@ -47,24 +59,15 @@
     "apk",
     "installer",
     "windows",
-    "electron",
-    "desktop"
+    "electron"
   ],
-  "author": "Alan Godois",
-  "license": "MIT",
   "dependencies": {
-    "child_process": "^1.0.2",
-    "cors": "^2.8.5",
     "express": "^4.18.2",
-    "fs-extra": "^11.1.1",
     "multer": "^1.4.5-lts.1",
-    "path": "^0.12.7"
+    "cors": "^2.8.5"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2",
     "electron": "^27.3.11",
-    "electron-builder": "^24.13.3",
-    "nodemon": "^3.0.1",
-    "wait-on": "^7.2.0"
+    "electron-builder": "^24.9.1"
   }
 }

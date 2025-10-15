@@ -1,204 +1,13 @@
 class WSAInstaller {
     constructor() {
-        this.isElectron = window.electronAPI?.isElectron || false;
         this.init();
         this.checkStatus();
         this.loadInstalledApps();
         this.setupEventListeners();
-        this.setupElectronListeners();
     }
 
     init() {
         this.log('Sistema inicializado', 'info');
-        
-        // Mostrar indicador se está rodando no Electron
-        if (this.isElectron) {
-            this.log('Rodando como aplicativo desktop', 'info');
-            this.addElectronFeatures();
-        } else {
-            this.log('Rodando no navegador web', 'info');
-        }
-    }
-
-    addElectronFeatures() {
-        // Adicionar indicador visual de que é aplicativo desktop
-        const header = document.querySelector('header');
-        const electronBadge = document.createElement('div');
-        electronBadge.style.cssText = `
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #3a5998;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 12px;
-            font-weight: bold;
-        `;
-        electronBadge.innerHTML = '<i class="fas fa-desktop"></i> Desktop App';
-        header.style.position = 'relative';
-        header.appendChild(electronBadge);
-    }
-
-    setupElectronListeners() {
-        if (!this.isElectron) return;
-
-        // Listeners para eventos do menu
-        window.electronAPI.onFileSelected((event, filePath) => {
-            this.log(`Arquivo selecionado via menu: ${filePath}`, 'info');
-            this.handleFileFromPath(filePath);
-        });
-
-        window.electronAPI.onRefreshStatus(() => {
-            this.log('Atualizando status via menu...', 'info');
-            this.checkStatus();
-        });
-
-        window.electronAPI.onStartWSA(() => {
-            this.log('Iniciando WSA via menu...', 'info');
-            this.startWSA();
-        });
-
-        window.electronAPI.onConnectADB(() => {
-            this.log('Conectando ADB via menu...', 'info');
-            this.connectWSA();
-        });
-
-        window.electronAPI.onShowInstalledApps(() => {
-            this.log('Carregando aplicativos via menu...', 'info');
-            this.loadInstalledApps();
-            // Scroll para a seção de apps
-            document.querySelector('.apps-section').scrollIntoView({ behavior: 'smooth' });
-        });
-
-        window.electronAPI.onOpenSettings(() => {
-            this.log('Abrindo configurações...', 'info');
-            this.showElectronSettings();
-        });
-    }
-
-    async handleFileFromPath(filePath) {
-        try {
-            // Simular um objeto File para compatibilidade
-            const fileName = filePath.split('\\').pop() || filePath.split('/').pop();
-            
-            // Verificar se é APK
-            if (!fileName.toLowerCase().endsWith('.apk')) {
-                this.log('Arquivo selecionado não é um APK válido', 'error');
-                return;
-            }
-
-            // Criar FormData e enviar
-            const formData = new FormData();
-            
-            // Para Electron, vamos ler o arquivo e criar um blob
-            const response = await fetch(`file://${filePath}`);
-            const blob = await response.blob();
-            
-            formData.append('apkFile', blob, fileName);
-            
-            this.log(`Instalando ${fileName} via seleção de menu...`, 'info');
-            await this.uploadAPK(formData, fileName);
-            
-        } catch (error) {
-            this.log(`Erro ao processar arquivo: ${error.message}`, 'error');
-        }
-    }
-
-    async uploadAPK(formData, fileName) {
-        const progressContainer = document.getElementById('upload-progress');
-        const progressFill = document.getElementById('progress-fill');
-        const progressText = document.getElementById('progress-text');
-        
-        progressContainer.style.display = 'block';
-        progressFill.style.width = '0%';
-        progressText.textContent = 'Enviando...';
-
-        try {
-            const response = await fetch('/api/install-apk', {
-                method: 'POST',
-                body: formData
-            });
-
-            progressFill.style.width = '100%';
-            progressText.textContent = 'Instalando...';
-
-            const result = await response.json();
-
-            if (response.ok && result.success) {
-                this.log(`${fileName} instalado com sucesso!`, 'success');
-                this.loadInstalledApps();
-                
-                // Notificação nativa se disponível
-                if (this.isElectron && window.electronAPI) {
-                    await window.electronAPI.showMessageBox({
-                        type: 'info',
-                        title: 'Instalação Concluída',
-                        message: `${fileName} foi instalado com sucesso!`,
-                        buttons: ['OK']
-                    });
-                }
-            } else {
-                this.log(`Erro na instalação: ${result.error}`, 'error');
-                
-                // Mostrar erro em dialog se no Electron
-                if (this.isElectron && window.electronAPI) {
-                    await window.electronAPI.showMessageBox({
-                        type: 'error',
-                        title: 'Erro na Instalação',
-                        message: `Falha ao instalar ${fileName}:\n\n${result.error}`,
-                        buttons: ['OK']
-                    });
-                }
-            }
-        } catch (error) {
-            this.log(`Erro na instalação: ${error.message}`, 'error');
-        } finally {
-            setTimeout(() => {
-                progressContainer.style.display = 'none';
-                document.getElementById('apk-file').value = '';
-            }, 2000);
-        }
-    }
-
-    showElectronSettings() {
-        // Criar modal de configurações simples
-        const modal = document.createElement('div');
-        modal.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        `;
-        
-        modal.innerHTML = `
-            <div style="background: white; padding: 30px; border-radius: 10px; max-width: 500px; width: 90%;">
-                <h3>Configurações do Aplicativo</h3>
-                <p>WSA APK Installer - Versão Desktop</p>
-                <br>
-                <p><strong>Recursos disponíveis:</strong></p>
-                <ul>
-                    <li>Arrastar e soltar arquivos APK</li>
-                    <li>Instalação via menu (Ctrl+O)</li>
-                    <li>Ícone na bandeja do sistema</li>
-                    <li>Notificações nativas</li>
-                    <li>Atalhos de teclado</li>
-                </ul>
-                <br>
-                <button onclick="this.parentElement.parentElement.remove()" 
-                        style="background: #3a5998; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-                    Fechar
-                </button>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
     }
 
     setupEventListeners() {
@@ -376,10 +185,42 @@ class WSAInstaller {
     async uploadAndInstallAPK(file) {
         this.log(`Iniciando instalação de ${file.name}...`, 'info');
         
+        const progressContainer = document.getElementById('upload-progress');
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+        
+        progressContainer.style.display = 'block';
+        progressFill.style.width = '0%';
+        progressText.textContent = 'Enviando...';
+
         const formData = new FormData();
         formData.append('apkFile', file);
-        
-        await this.uploadAPK(formData, file.name);
+
+        try {
+            const response = await fetch('/api/install-apk', {
+                method: 'POST',
+                body: formData
+            });
+
+            progressFill.style.width = '100%';
+            progressText.textContent = 'Instalando...';
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                this.log(`${file.name} instalado com sucesso!`, 'success');
+                this.loadInstalledApps();
+            } else {
+                this.log(`Erro na instalação: ${result.error}`, 'error');
+            }
+        } catch (error) {
+            this.log(`Erro na instalação: ${error.message}`, 'error');
+        } finally {
+            setTimeout(() => {
+                progressContainer.style.display = 'none';
+                document.getElementById('apk-file').value = '';
+            }, 2000);
+        }
     }
 
     async loadInstalledApps() {

@@ -1,7 +1,8 @@
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
-const fs = require('fs-extra');
+const fs = require('fs').promises;
+const fsSync = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
 const { promisify } = require('util');
@@ -19,14 +20,22 @@ async function getAdbPath() {
   } catch {
     // Se não encontrou no PATH, tenta o caminho padrão do WinGet
     const wingetPath = path.join(process.env.LOCALAPPDATA, 'Microsoft', 'WinGet', 'Packages', 'Google.PlatformTools_Microsoft.Winget.Source_8wekyb3d8bbwe', 'platform-tools', 'adb.exe');
-    if (await fs.pathExists(wingetPath)) {
+    try {
+      await fs.access(wingetPath);
       return `"${wingetPath}"`;
+    } catch {
+      throw new Error('ADB não encontrado');
     }
-    throw new Error('ADB não encontrado');
   }
 }
 
 let ADB_PATH = 'adb'; // Inicializa com comando padrão
+
+// Criar diretório uploads se não existir
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fsSync.existsSync(uploadsDir)) {
+  fsSync.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Middleware
 app.use(cors());
@@ -190,7 +199,7 @@ app.post('/api/install-apk', upload.single('apkFile'), async (req, res) => {
     const result = await installAPK(req.file.path);
     
     // Remove o arquivo temporário
-    await fs.remove(req.file.path);
+    await fs.unlink(req.file.path);
 
     if (result.success) {
       res.json({ 
@@ -206,7 +215,11 @@ app.post('/api/install-apk', upload.single('apkFile'), async (req, res) => {
   } catch (error) {
     // Remove o arquivo em caso de erro
     if (req.file && req.file.path) {
-      await fs.remove(req.file.path);
+      try {
+        await fs.unlink(req.file.path);
+      } catch (unlinkError) {
+        console.error('Erro ao remover arquivo temporário:', unlinkError);
+      }
     }
     res.status(500).json({ error: error.message });
   }

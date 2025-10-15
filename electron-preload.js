@@ -1,8 +1,8 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-// Expor APIs seguras para o renderer process
+// Expor APIs seguras para o renderer
 contextBridge.exposeInMainWorld('electronAPI', {
-    // Informações da aplicação
+    // Informações do app
     getAppVersion: () => ipcRenderer.invoke('get-app-version'),
     
     // Diálogos
@@ -10,20 +10,43 @@ contextBridge.exposeInMainWorld('electronAPI', {
     showOpenDialog: (options) => ipcRenderer.invoke('show-open-dialog', options),
     showMessageBox: (options) => ipcRenderer.invoke('show-message-box', options),
     
-    // Eventos do menu
-    onFileSelected: (callback) => ipcRenderer.on('file-selected', callback),
-    onOpenSettings: (callback) => ipcRenderer.on('open-settings', callback),
-    onRefreshStatus: (callback) => ipcRenderer.on('refresh-status', callback),
-    onStartWSA: (callback) => ipcRenderer.on('start-wsa', callback),
-    onConnectADB: (callback) => ipcRenderer.on('connect-adb', callback),
-    onShowInstalledApps: (callback) => ipcRenderer.on('show-installed-apps', callback),
+    // Notificações
+    showNotification: (options) => ipcRenderer.invoke('show-notification', options),
+    
+    // Eventos do main process
+    onFileSelected: (callback) => {
+        ipcRenderer.on('file-selected', (event, filePath) => callback(filePath));
+    },
+    
+    onRefreshStatus: (callback) => {
+        ipcRenderer.on('refresh-status', () => callback());
+    },
+    
+    onStartWSA: (callback) => {
+        ipcRenderer.on('start-wsa', () => callback());
+    },
+    
+    onConnectADB: (callback) => {
+        ipcRenderer.on('connect-adb', () => callback());
+    },
+    
+    onShowInstalledApps: (callback) => {
+        ipcRenderer.on('show-installed-apps', () => callback());
+    },
     
     // Remover listeners
-    removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel),
-    
-    // Verificar se está rodando no Electron
-    isElectron: true,
-    
-    // Plataforma
-    platform: process.platform
+    removeAllListeners: (channel) => {
+        ipcRenderer.removeAllListeners(channel);
+    }
+});
+
+// Verificar se estamos no Electron
+contextBridge.exposeInMainWorld('isElectron', true);
+
+// Informações do sistema
+contextBridge.exposeInMainWorld('systemInfo', {
+    platform: process.platform,
+    version: process.version,
+    chrome: process.versions.chrome,
+    electron: process.versions.electron
 });
