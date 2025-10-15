@@ -1,20 +1,35 @@
 # WSA APK Installer
 
-Um aplicativo web moderno para instalar facilmente aplicativos Android (.apk) no Windows usando o Windows Subsystem for Android (WSA).
+Um aplicativo **desktop e web** moderno para instalar facilmente aplicativos Android (.apk) no Windows usando o Windows Subsystem for Android (WSA).
 
 ![WSA APK Installer](https://img.shields.io/badge/WSA-APK%20Installer-blue)
 ![Node.js](https://img.shields.io/badge/Node.js-v18+-green)
+![Electron](https://img.shields.io/badge/Electron-v27+-purple)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ## 🚀 Características
 
-- ✅ **Interface Web Intuitiva**: Interface moderna e responsiva para upload e gerenciamento de APKs
-- ✅ **Drag & Drop**: Arraste e solte arquivos APK diretamente na interface
-- ✅ **Status em Tempo Real**: Monitora o status do WSA, ADB e conexão automaticamente
-- ✅ **Gerenciamento de Apps**: Lista e desinstala aplicativos Android instalados
-- ✅ **Logs Detalhados**: Sistema de logs em tempo real para acompanhar o processo
+### 🖥️ **Aplicativo Desktop (Electron)**
+- ✅ **Interface Nativa do Windows**: Janela dedicada com menu e atalhos
+- ✅ **Ícone na Bandeja**: Acesso rápido via system tray
+- ✅ **Drag & Drop Global**: Arraste APKs de qualquer lugar
+- ✅ **Notificações Nativas**: Alertas do sistema Windows
+- ✅ **Atalhos de Teclado**: Ctrl+O para abrir APK, F5 para atualizar, etc.
+- ✅ **Instalador Windows**: Arquivo .exe para instalação fácil
+
+### 🌐 **Interface Web**
+- ✅ **Interface Responsiva**: Design moderno e adaptável
+- ✅ **Drag & Drop**: Arraste e solte arquivos APK diretamente
+- ✅ **Status em Tempo Real**: Monitora WSA, ADB e conexão automaticamente
+- ✅ **Gerenciamento de Apps**: Lista e desinstala aplicativos Android
+- ✅ **Logs Detalhados**: Sistema de logs em tempo real
 - ✅ **Segurança**: Validação de arquivos APK e limitação de tamanho
-- ✅ **Automação**: Scripts PowerShell para automação completa do processo
+
+### 🔧 **Funcionalidades Técnicas**
+- ✅ **Servidor Integrado**: Node.js embarcado no aplicativo desktop
+- ✅ **Instalação Forçada**: Suporte a downgrade e substituição de apps
+- ✅ **Scripts de Automação**: PowerShell para tarefas avançadas
+- ✅ **Multi-plataforma**: Funciona como web app e desktop app
 
 ## 📋 Pré-requisitos
 
@@ -73,9 +88,48 @@ npm install
 
 ## 🚀 Como Usar
 
-### 1. Iniciar o Aplicativo
+### 🖥️ **Aplicativo Desktop (Recomendado)**
 
+#### Instalação Rápida
+1. Baixe o instalador `.exe` da seção [Releases](https://github.com/Kyouz2148/Instalador-de-APK-para-Windows-com-WSA/releases)
+2. Execute o instalador como administrador
+3. Siga as instruções na tela
+4. Inicie o aplicativo pelo menu Iniciar ou ícone da área de trabalho
+
+#### Execução Direta (Desenvolvimento)
 ```bash
+# Clonar o repositório
+git clone https://github.com/Kyouz2148/Instalador-de-APK-para-Windows-com-WSA.git
+cd Instalador-de-APK-para-Windows-com-WSA
+
+# Instalar dependências
+npm install
+
+# Executar aplicativo desktop
+npm run electron
+
+# Ou usar o arquivo batch
+start-desktop.bat
+```
+
+#### Recursos do Desktop App
+- **Menu Principal**: Arquivo → Instalar APK (Ctrl+O)
+- **Atalhos de Teclado**:
+  - `Ctrl+O`: Abrir seletor de APK
+  - `F5`: Atualizar status do WSA
+  - `Ctrl+L`: Ver aplicativos instalados
+  - `Ctrl+,`: Configurações
+  - `F12`: Ferramentas de desenvolvedor
+- **System Tray**: Clique duplo para abrir, menu com clique direito
+- **Notificações**: Alertas nativos do Windows para instalações
+
+### 🌐 **Interface Web**
+
+#### Execução Local
+```bash
+# Instalar dependências
+npm install
+
 # Modo produção
 npm start
 
@@ -83,10 +137,42 @@ npm start
 npm run dev
 ```
 
-### 2. Acessar a Interface Web
-Abra seu navegador e acesse: `http://localhost:3000`
+#### Acesso
+- Abra seu navegador em: `http://localhost:3000`
+- Funciona em qualquer navegador moderno
 
-### 3. Primeira Configuração
+## 🔨 Build e Distribuição
+
+### Gerar Executável Windows
+
+```bash
+# Build completo (instalador + executável)
+npm run build
+
+# Ou usar o script PowerShell
+.\scripts\build.ps1
+
+# Apenas empacotamento (sem instalador)
+npm run pack
+```
+
+### Scripts Disponíveis
+
+| Comando | Descrição |
+|---------|-----------|
+| `npm start` | Servidor web (http://localhost:3000) |
+| `npm run dev` | Servidor web com auto-reload |
+| `npm run electron` | Aplicativo desktop |
+| `npm run electron-dev` | Desktop app com hot-reload |
+| `npm run build` | Build para distribuição |
+| `npm run pack` | Empacotamento sem instalador |
+
+### Arquivos Gerados
+
+Após o build, os arquivos serão criados na pasta `dist/`:
+- `WSA APK Installer Setup.exe` - Instalador NSIS
+- `win-unpacked/` - Aplicativo descompactado
+- Outros arquivos de distribuição
 
 1. **Verificar Status**: A página mostrará automaticamente o status do WSA e ADB
 2. **Iniciar WSA**: Se não estiver rodando, clique em "Iniciar WSA"

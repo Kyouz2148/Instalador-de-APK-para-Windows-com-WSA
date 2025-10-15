@@ -1,0 +1,8 @@
+# Placeholder para ícone da aplicação
+# Para usar um ícone personalizado:
+# 1. Substitua este arquivo por icon.png (256x256 pixels)
+# 2. Adicione também icon.ico para Windows
+# 3. O ícone será usado na barra de tarefas, tray e instalador
+
+# Sugestão de ícone: Combine o logo do Android com o logo do Windows
+# Cores sugeridas: Verde Android (#3DDC84) + Azul Windows (#0078D4)
