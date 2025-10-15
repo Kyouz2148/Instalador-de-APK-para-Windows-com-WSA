@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WSA APK Installer</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fab fa-android"></i> WSA APK Installer</h1>
+            <p>Instale aplicativos Android no Windows usando o WSA</p>
+        </header>
+
+        <!-- Status do WSA -->
+        <section class="status-section">
+            <h2><i class="fas fa-info-circle"></i> Status do Sistema</h2>
+            <div class="status-grid">
+                <div class="status-item" id="wsa-status">
+                    <i class="fas fa-circle status-icon"></i>
+                    <span>WSA</span>
+                    <span class="status-text">Verificando...</span>
+                </div>
+                <div class="status-item" id="adb-status">
+                    <i class="fas fa-circle status-icon"></i>
+                    <span>ADB</span>
+                    <span class="status-text">Verificando...</span>
+                </div>
+                <div class="status-item" id="connection-status">
+                    <i class="fas fa-circle status-icon"></i>
+                    <span>Conexão</span>
+                    <span class="status-text">Verificando...</span>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button id="start-wsa-btn" class="btn btn-primary">
+                    <i class="fas fa-play"></i> Iniciar WSA
+                </button>
+                <button id="connect-wsa-btn" class="btn btn-secondary">
+                    <i class="fas fa-link"></i> Conectar ADB
+                </button>
+                <button id="refresh-status-btn" class="btn btn-refresh">
+                    <i class="fas fa-sync-alt"></i> Atualizar Status
+                </button>
+            </div>
+        </section>
+
+        <!-- Upload de APK -->
+        <section class="upload-section">
+            <h2><i class="fas fa-upload"></i> Instalar APK</h2>
+            <div class="upload-area" id="upload-area">
+                <div class="upload-content">
+                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                    <p>Arraste um arquivo APK aqui ou clique para selecionar</p>
+                    <input type="file" id="apk-file" accept=".apk" hidden>
+                    <button class="btn btn-upload" onclick="document.getElementById('apk-file').click()">
+                        Selecionar APK
+                    </button>
+                </div>
+            </div>
+            <div class="upload-progress" id="upload-progress" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <p id="progress-text">Enviando...</p>
+            </div>
+        </section>
+
+        <!-- Lista de aplicativos instalados -->
+        <section class="apps-section">
+            <h2><i class="fas fa-mobile-alt"></i> Aplicativos Instalados</h2>
+            <div class="apps-controls">
+                <button id="refresh-apps-btn" class="btn btn-secondary">
+                    <i class="fas fa-sync-alt"></i> Atualizar Lista
+                </button>
+            </div>
+            <div class="apps-list" id="apps-list">
+                <p class="loading">Carregando aplicativos...</p>
+            </div>
+        </section>
+
+        <!-- Logs e mensagens -->
+        <section class="logs-section">
+            <h2><i class="fas fa-terminal"></i> Logs</h2>
+            <div class="logs-container" id="logs-container">
+                <p class="log-item info">Sistema inicializado</p>
+            </div>
+            <button id="clear-logs-btn" class="btn btn-secondary">
+                <i class="fas fa-trash"></i> Limpar Logs
+            </button>
+        </section>
+    </div>
+
+    <!-- Modal de confirmação -->
+    <div class="modal" id="confirm-modal">
+        <div class="modal-content">
+            <h3>Confirmar Ação</h3>
+            <p id="confirm-message"></p>
+            <div class="modal-buttons">
+                <button id="confirm-yes" class="btn btn-danger">Sim</button>
+                <button id="confirm-no" class="btn btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
