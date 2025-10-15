@@ -2,6 +2,7 @@ const { app, BrowserWindow, Menu, ipcMain, dialog, shell, Tray, nativeImage, Not
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
+const { createInlineHTML } = require('./inline-html');
 
 // Configurações
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
@@ -217,21 +218,39 @@ function createMainWindow() {
 
 // Função para carregar aplicação diretamente
 async function loadAppDirectly() {
-    const indexPath = path.join(__dirname, 'public', 'index.html');
-    console.log(`📄 Carregando arquivo local: ${indexPath}`);
+    console.log(`📄 Carregando aplicação com recursos inline...`);
     
-    if (fs.existsSync(indexPath)) {
-        try {
-            await mainWindow.loadFile(indexPath);
-            console.log('✅ Aplicação carregada diretamente do arquivo!');
-        } catch (error) {
-            console.error('❌ Erro ao carregar arquivo local:', error.message);
-            await loadErrorPage();
-        }
-    } else {
-        console.error('❌ Arquivo index.html não encontrado!');
-        await loadErrorPage();
+    try {
+        // Tentar carregar com HTML inline primeiro (mais confiável)
+        console.log(`🔧 Criando HTML inline com recursos embutidos...`);
+        const inlineHTML = createInlineHTML();
+        
+        await mainWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(inlineHTML));
+        console.log('✅ Aplicação carregada com HTML inline!');
+        return;
+    } catch (error) {
+        console.error('❌ Erro ao carregar HTML inline:', error.message);
     }
+    
+    // Fallback: tentar carregar arquivo diretamente
+    try {
+        const indexPath = path.join(__dirname, 'public', 'index.html');
+        console.log(`📄 Fallback: carregando arquivo: ${indexPath}`);
+        
+        if (fs.existsSync(indexPath)) {
+            await mainWindow.loadFile(indexPath);
+            console.log('✅ Aplicação carregada via arquivo!');
+            return;
+        } else {
+            console.error('❌ Arquivo index.html não encontrado!');
+        }
+    } catch (error) {
+        console.error('❌ Erro ao carregar arquivo local:', error.message);
+    }
+    
+    // Último recurso: página de erro
+    console.log('🔧 Carregando página de erro...');
+    await loadErrorPage();
 }
 
 // Função para iniciar servidor interno
