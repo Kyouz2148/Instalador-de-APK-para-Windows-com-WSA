@@ -24,12 +24,14 @@
     "files": [
       "**/*",
       "!dist/**/*",
+      "!build/**/*",
       "!node_modules/**/*",
-      "node_modules/express/**/*",
-      "node_modules/multer/**/*",
-      "node_modules/cors/**/*",
-      "node_modules/fs-extra/**/*",
-      "node_modules/path/**/*"
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
+      "!.editorconfig",
+      "!**/._*",
+      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
+      "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
+      "!.env*"
     ],
     "win": {
       "target": {

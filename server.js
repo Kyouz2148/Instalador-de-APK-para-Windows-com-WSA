@@ -264,7 +264,32 @@ app.use((error, req, res, next) => {
 });
 
 // Iniciar servidor
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
   console.log('WSA APK Installer iniciado com sucesso!');
+});
+
+server.on('error', (err) => {
+  console.error('❌ Erro ao iniciar servidor:', err.message);
+  if (err.code === 'EADDRINUSE') {
+    console.error(`🔴 Porta ${PORT} já está em uso!`);
+    process.exit(1);
+  }
+});
+
+// Tratamento de encerramento gracioso
+process.on('SIGTERM', () => {
+  console.log('🔴 Recebido SIGTERM, encerrando servidor...');
+  server.close(() => {
+    console.log('🔴 Servidor encerrado.');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('🔴 Recebido SIGINT, encerrando servidor...');
+  server.close(() => {
+    console.log('🔴 Servidor encerrado.');
+    process.exit(0);
+  });
 });

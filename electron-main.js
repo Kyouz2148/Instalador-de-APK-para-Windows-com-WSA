@@ -4,8 +4,8 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 
 // Configurações
-const isDev = process.env.NODE_ENV === 'development';
-const PORT = 3000;
+const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+const PORT = process.env.PORT || 3000;
 
 // Variáveis globais
 let mainWindow;
@@ -45,6 +45,22 @@ async function loadAppWithRetry() {
     }
     
     console.error('❌ Falha ao conectar ao servidor após todas as tentativas');
+    
+    // Tentar carregar arquivo local diretamente como fallback
+    console.log('🔄 Tentando carregar arquivo local como fallback...');
+    try {
+        const indexPath = path.join(__dirname, 'public', 'index.html');
+        if (fs.existsSync(indexPath)) {
+            console.log('📄 Carregando index.html diretamente...');
+            await mainWindow.loadFile(indexPath);
+            console.log('✅ Aplicação carregada diretamente!');
+            return;
+        } else {
+            console.error('❌ Arquivo index.html não encontrado!');
+        }
+    } catch (error) {
+        console.error('❌ Erro ao carregar arquivo local:', error.message);
+    }
     
     // Carregar página de erro local
     const errorHtml = `
@@ -168,13 +184,48 @@ function startServer() {
 
     console.log('🚀 Iniciando servidor interno...');
     
+    // Verificar se os arquivos necessários existem
+    const serverPath = path.join(__dirname, 'server.js');
+    const publicPath = path.join(__dirname, 'public');
+    
+    console.log(`🔍 Verificando arquivos necessários...`);
+    console.log(`📄 Server.js existe: ${fs.existsSync(serverPath)}`);
+    console.log(`📁 Pasta public existe: ${fs.existsSync(publicPath)}`);
+    
+    if (!fs.existsSync(serverPath)) {
+        console.error('❌ Arquivo server.js não encontrado!');
+        return Promise.reject(new Error('Arquivo server.js não encontrado'));
+    }
+    
+    if (!fs.existsSync(publicPath)) {
+        console.error('❌ Pasta public não encontrada!');
+        return Promise.reject(new Error('Pasta public não encontrada'));
+    }
+    
     return new Promise((resolve, reject) => {
         const serverPath = path.join(__dirname, 'server.js');
-        serverProcess = spawn('node', [serverPath], {
+        
+        // Configuração diferente para produção vs desenvolvimento
+        const spawnOptions = {
             stdio: 'pipe',
-            env: { ...process.env, PORT: PORT },
+            env: { 
+                ...process.env, 
+                PORT: PORT,
+                NODE_ENV: isDev ? 'development' : 'production'
+            },
             cwd: __dirname
-        });
+        };
+        
+        // Em produção, pode precisar de um shell
+        if (!isDev && process.platform === 'win32') {
+            spawnOptions.shell = true;
+        }
+        
+        console.log(`🚀 Iniciando servidor em modo: ${isDev ? 'desenvolvimento' : 'produção'}`);
+        console.log(`📁 Caminho do servidor: ${serverPath}`);
+        console.log(`📂 Diretório de trabalho: ${__dirname}`);
+        
+        serverProcess = spawn('node', [serverPath], spawnOptions);
 
         let serverStarted = false;
 
