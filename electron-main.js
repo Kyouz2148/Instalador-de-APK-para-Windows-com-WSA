@@ -15,6 +15,84 @@ let tray;
 // Configurar nome da aplicação
 app.setName('WSA APK Installer');
 
+// Função para carregar aplicação com retry
+async function loadAppWithRetry() {
+    const maxRetries = 10;
+    let currentRetry = 0;
+    
+    while (currentRetry < maxRetries) {
+        try {
+            console.log(`🔄 Tentativa ${currentRetry + 1}/${maxRetries} de conectar ao servidor...`);
+            
+            // Testar se o servidor está respondendo
+            const response = await fetch(`http://localhost:${PORT}/api/wsa-status`).catch(() => null);
+            
+            if (response && response.ok) {
+                console.log('✅ Servidor respondendo! Carregando aplicação...');
+                await mainWindow.loadURL(`http://localhost:${PORT}`);
+                console.log('✅ Aplicação carregada com sucesso!');
+                return;
+            }
+        } catch (error) {
+            console.log(`❌ Tentativa ${currentRetry + 1} falhou:`, error.message);
+        }
+        
+        currentRetry++;
+        if (currentRetry < maxRetries) {
+            console.log(`⏳ Aguardando 1 segundo antes da próxima tentativa...`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+    
+    console.error('❌ Falha ao conectar ao servidor após todas as tentativas');
+    
+    // Carregar página de erro local
+    const errorHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Erro - WSA APK Installer</title>
+        <style>
+            body { 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+                margin: 0;
+                text-align: center;
+            }
+            .container { max-width: 500px; padding: 40px; }
+            h1 { font-size: 2.5em; margin-bottom: 20px; }
+            p { font-size: 1.2em; line-height: 1.6; margin-bottom: 30px; }
+            button { 
+                background: #fff; 
+                color: #667eea; 
+                border: none; 
+                padding: 15px 30px; 
+                font-size: 1.1em; 
+                border-radius: 25px; 
+                cursor: pointer;
+                font-weight: bold;
+            }
+            button:hover { background: #f0f0f0; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🔧 Servidor Iniciando...</h1>
+            <p>O servidor interno está iniciando. Aguarde alguns segundos e clique em recarregar.</p>
+            <button onclick="window.location.reload()">🔄 Recarregar</button>
+        </div>
+    </body>
+    </html>
+    `;
+    
+    await mainWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(errorHtml));
+}
+
 // Função para criar a janela principal
 function createMainWindow() {
     mainWindow = new BrowserWindow({
@@ -69,37 +147,79 @@ function createMainWindow() {
 
     // Aguardar servidor e carregar aplicação
     if (isDev) {
-        mainWindow.loadURL(`http://localhost:${PORT}`);
-    } else {
+        // Em desenvolvimento, aguarda um pouco mais
         setTimeout(() => {
-            mainWindow.loadURL(`http://localhost:${PORT}`);
-        }, 3000);
+            loadAppWithRetry();
+        }, 2000);
+    } else {
+        // Em produção, aguarda servidor iniciar
+        setTimeout(() => {
+            loadAppWithRetry();
+        }, 5000);
     }
 }
 
 // Função para iniciar servidor interno
 function startServer() {
-    if (serverProcess) return;
+    if (serverProcess) {
+        console.log('🔄 Servidor já está rodando');
+        return Promise.resolve();
+    }
 
     console.log('🚀 Iniciando servidor interno...');
     
-    const serverPath = path.join(__dirname, 'server.js');
-    serverProcess = spawn('node', [serverPath], {
-        stdio: 'pipe',
-        env: { ...process.env, PORT: PORT }
-    });
+    return new Promise((resolve, reject) => {
+        const serverPath = path.join(__dirname, 'server.js');
+        serverProcess = spawn('node', [serverPath], {
+            stdio: 'pipe',
+            env: { ...process.env, PORT: PORT },
+            cwd: __dirname
+        });
 
-    serverProcess.stdout.on('data', (data) => {
-        console.log(`📡 Server: ${data}`);
-    });
+        let serverStarted = false;
 
-    serverProcess.stderr.on('data', (data) => {
-        console.error(`❌ Server Error: ${data}`);
-    });
+        serverProcess.stdout.on('data', (data) => {
+            const output = data.toString();
+            console.log(`📡 Server: ${output}`);
+            
+            // Verifica se o servidor iniciou com sucesso
+            if (output.includes('Servidor rodando') || output.includes(`localhost:${PORT}`)) {
+                if (!serverStarted) {
+                    serverStarted = true;
+                    console.log('✅ Servidor iniciado com sucesso!');
+                    resolve();
+                }
+            }
+        });
 
-    serverProcess.on('close', (code) => {
-        console.log(`🔴 Servidor fechado com código ${code}`);
-        serverProcess = null;
+        serverProcess.stderr.on('data', (data) => {
+            const error = data.toString();
+            console.error(`❌ Server Error: ${error}`);
+            
+            // Se for erro crítico, rejeita a promise
+            if (error.includes('EADDRINUSE') || error.includes('listen EADDRINUSE')) {
+                console.error('🔴 Porta já está em uso!');
+                if (!serverStarted) {
+                    reject(new Error(`Porta ${PORT} já está em uso`));
+                }
+            }
+        });
+
+        serverProcess.on('close', (code) => {
+            console.log(`🔴 Servidor fechado com código ${code}`);
+            serverProcess = null;
+            if (!serverStarted) {
+                reject(new Error(`Servidor falhou ao iniciar, código: ${code}`));
+            }
+        });
+
+        // Timeout de 10 segundos para inicialização
+        setTimeout(() => {
+            if (!serverStarted) {
+                console.error('⏰ Timeout: Servidor demorou muito para iniciar');
+                reject(new Error('Timeout na inicialização do servidor'));
+            }
+        }, 10000);
     });
 }
 
@@ -338,13 +458,19 @@ function createTray() {
 }
 
 // Eventos principais do Electron
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
     createMainWindow();
     createMenu();
     createTray();
     
-    if (!isDev) {
-        startServer();
+    try {
+        // Iniciar servidor (tanto em dev quanto produção)
+        console.log('🔄 Aguardando servidor iniciar...');
+        await startServer();
+        console.log('✅ Servidor iniciado com sucesso!');
+    } catch (error) {
+        console.error('❌ Erro ao iniciar servidor:', error.message);
+        // Continua mesmo se o servidor falhar
     }
 
     console.log('✅ WSA APK Installer iniciado com sucesso!');
