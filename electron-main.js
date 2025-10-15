@@ -15,6 +15,56 @@ let tray;
 // Configurar nome da aplicação
 app.setName('WSA APK Installer');
 
+// Função para carregar página de erro
+async function loadErrorPage() {
+    const errorHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Erro - WSA APK Installer</title>
+        <style>
+            body { 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+                margin: 0;
+                text-align: center;
+            }
+            .container { max-width: 500px; padding: 40px; }
+            h1 { font-size: 2.5em; margin-bottom: 20px; }
+            p { font-size: 1.2em; line-height: 1.6; margin-bottom: 30px; }
+            button { 
+                background: #fff; 
+                color: #667eea; 
+                border: none; 
+                padding: 15px 30px; 
+                font-size: 1.1em; 
+                border-radius: 25px; 
+                cursor: pointer;
+                font-weight: bold;
+                margin: 10px;
+            }
+            button:hover { background: #f0f0f0; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🔧 Iniciando...</h1>
+            <p>O WSA APK Installer está carregando. Se esta tela persistir, tente fechar e abrir novamente o aplicativo.</p>
+            <button onclick="window.location.reload()">🔄 Recarregar</button>
+            <button onclick="window.close()">❌ Fechar</button>
+        </div>
+    </body>
+    </html>
+    `;
+    
+    await mainWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(errorHtml));
+}
+
 // Função para carregar aplicação com retry
 async function loadAppWithRetry() {
     const maxRetries = 10;
@@ -161,17 +211,26 @@ function createMainWindow() {
         }
     });
 
-    // Aguardar servidor e carregar aplicação
-    if (isDev) {
-        // Em desenvolvimento, aguarda um pouco mais
-        setTimeout(() => {
-            loadAppWithRetry();
-        }, 2000);
+    // Carregar aplicação diretamente do arquivo local
+    loadAppDirectly();
+}
+
+// Função para carregar aplicação diretamente
+async function loadAppDirectly() {
+    const indexPath = path.join(__dirname, 'public', 'index.html');
+    console.log(`📄 Carregando arquivo local: ${indexPath}`);
+    
+    if (fs.existsSync(indexPath)) {
+        try {
+            await mainWindow.loadFile(indexPath);
+            console.log('✅ Aplicação carregada diretamente do arquivo!');
+        } catch (error) {
+            console.error('❌ Erro ao carregar arquivo local:', error.message);
+            await loadErrorPage();
+        }
     } else {
-        // Em produção, aguarda servidor iniciar
-        setTimeout(() => {
-            loadAppWithRetry();
-        }, 5000);
+        console.error('❌ Arquivo index.html não encontrado!');
+        await loadErrorPage();
     }
 }
 

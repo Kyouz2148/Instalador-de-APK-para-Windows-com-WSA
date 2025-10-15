@@ -1,9 +1,36 @@
 class WSAInstaller {
     constructor() {
+        // Configurar URL base para APIs
+        this.baseURL = this.detectBaseURL();
+        console.log('🌐 URL base detectada:', this.baseURL);
+        
         this.init();
         this.checkStatus();
         this.loadInstalledApps();
         this.setupEventListeners();
+    }
+
+    detectBaseURL() {
+        // Se estamos no Electron, usar localhost direto
+        if (window.electronAPI || window.isElectron) {
+            return 'http://localhost:3000';
+        }
+        // Se estamos no navegador, usar URL atual
+        return window.location.origin;
+    }
+
+    // Helper para fazer chamadas API
+    async apiCall(endpoint, options = {}) {
+        const url = `${this.baseURL}${endpoint}`;
+        console.log(`🌐 API Call: ${url}`);
+        
+        try {
+            const response = await fetch(url, options);
+            return response;
+        } catch (error) {
+            console.error(`❌ Erro na API ${endpoint}:`, error);
+            throw error;
+        }
     }
 
     init() {
@@ -58,7 +85,7 @@ class WSAInstaller {
         this.setStatusLoading();
 
         try {
-            const response = await fetch('/api/wsa-status');
+            const response = await this.apiCall('/api/wsa-status');
             const status = await response.json();
 
             this.updateStatusDisplay(status);
